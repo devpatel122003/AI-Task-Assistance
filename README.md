@@ -57,7 +57,6 @@ npm run dev
 
 # Deploy
 npm run deploy
-```
 
 ## Usage Examples
 
