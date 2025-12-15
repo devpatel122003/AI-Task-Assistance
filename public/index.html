@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Task Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+            height: 90vh;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .panel-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-bubble {
+            background: #f1f3f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background: #5568d3;
+        }
+
+        .chat-input button:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .tasks-list {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+
+        .task-card.high {
+            border-left-color: #ff6b6b;
+        }
+
+        .task-card.medium {
+            border-left-color: #ffa500;
+        }
+
+        .task-card.low {
+            border-left-color: #51cf66;
+        }
+
+        .task-card.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .task-priority {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .task-priority.high {
+            background: #ffe0e0;
+            color: #ff6b6b;
+        }
+
+        .task-priority.medium {
+            background: #fff4e0;
+            color: #ffa500;
+        }
+
+        .task-priority.low {
+            background: #e0f7e9;
+            color: #51cf66;
+        }
+
+        .task-description {
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #adb5bd;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>💬 Chat with AI Assistant</h2>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-bubble">
+                        Hi! I'm your AI task assistant. Try: "Add a task to buy groceries" or "What are my tasks?"
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type your message..."
+                    onkeypress="if(event.key==='Enter') sendMessage()" />
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+                <h2>📋 Your Tasks</h2>
+            </div>
+            <div class="tasks-list" id="tasksList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <p>No tasks yet. Ask the assistant to create one!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_URL = 'https://ai-task-assistant.devpatel-neu.workers.dev';;
+        const userId = 'user-' + Math.random().toString(36).substr(2, 9);
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            addMessage('user', message);
+            input.value = '';
+
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                addMessage('assistant', data.reply);
+                renderTasks(data.tasks);
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('assistant', 'Sorry, error occurred. Try again.');
+            } finally {
+                sendBtn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+            messageDiv.appendChild(bubble);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function renderTasks(tasks) {
+            const tasksList = document.getElementById('tasksList');
+            if (!tasks || tasks.length === 0) {
+                tasksList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><p>No tasks yet!</p></div>';
+                return;
+            }
+            tasksList.innerHTML = tasks.map(task => `
+        <div class="task-card ${task.priority} ${task.status === 'completed' ? 'completed' : ''}">
+          <div class="task-header">
+            <div class="task-title">${escapeHtml(task.title)}</div>
+            <span class="task-priority ${task.priority}">${task.priority}</span>
+          </div>
+          ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+        </div>
+      `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_URL}/tasks`, {
+                    headers: { 'X-User-Id': userId }
+                });
+                const tasks = await response.json();
+                renderTasks(tasks);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        loadTasks();
+    </script>
+</body>
+
+</html>

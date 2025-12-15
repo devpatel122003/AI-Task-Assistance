@@ -1,0 +1,16 @@
+name = "ai-task-assistant"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "TASK_MANAGER"
+class_name = "TaskManager"
+script_name = "ai-task-assistant"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TaskManager"]
